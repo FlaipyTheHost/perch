@@ -1,0 +1,36 @@
+app-id: io.FlaipyTheHost.Perch
+
+runtime: org.kde.Platform
+runtime-version: '6.11'
+
+sdk: org.kde.Sdk
+
+base: io.qt.qtwebengine.BaseApp
+base-version: '6.11'
+
+command: perch
+
+finish-args:
+  - --device=dri
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --share=ipc
+  - --share=network
+  - --talk-name=org.freedesktop.Notifications
+  - --env=QTWEBENGINEPROCESS_PATH=/app/bin/QtWebEngineProcess
+
+cleanup-commands:
+  - /app/cleanup-BaseApp.sh
+
+modules:
+  - name: perch
+    buildsystem: meson
+
+    build-options:
+      arch:
+        x86_64:
+          prepend-pkg-config-path: /app/lib/x86_64-linux-gnu/pkgconfig
+
+    sources:
+      - type: dir
+        path: .

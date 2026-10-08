@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="/">
+    <file>io.FlaipyTheHost.Perch.svg</file>
+  </qresource>
+</RCC>

@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Perch
+GenericName=AI assistant in your tray
+GenericName[es]=Asistente de IA en la bandeja
+GenericName[pt]=Assistente de IA na bandeja
+Comment=Keep any AI chat one click away in your system tray
+Comment[es]=Mantén cualquier chat de IA a un clic en la bandeja del sistema
+Comment[pt]=Mantenha qualquer chat de IA a um clique na bandeja do sistema
+Exec=perch
+Icon=io.FlaipyTheHost.Perch
+Categories=Utility;Network;
+Keywords=AI;Assistant;Chat;Tray;
+StartupNotify=false
+StartupWMClass=perch

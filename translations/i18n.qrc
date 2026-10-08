@@ -1,0 +1,7 @@
+<RCC>
+  <!-- @note@ -->
+  <qresource prefix="/i18n">
+    <file>perch_es.qm</file>
+    <file>perch_pt.qm</file>
+  </qresource>
+</RCC>
