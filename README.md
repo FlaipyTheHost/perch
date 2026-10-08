@@ -7,7 +7,7 @@
 **Keep any AI chat one click away in your system tray.**
 <p align="center">
   <img src="docs/screenshot.png" height="700">
-  <img src="docs/demo.gif" height="700">
+  <img src="docs/demo.gif">
 </p>
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
