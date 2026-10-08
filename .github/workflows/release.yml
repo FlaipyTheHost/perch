@@ -9,126 +9,99 @@ permissions:
   contents: write
 
 jobs:
-  build:
-    name: Build packages
+  build-deb:
     runs-on: ubuntu-24.04
-
+    container: debian:trixie
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Install dependencies
         run: |
-          sudo apt update
-          sudo apt install -y \
-            build-essential \
-            meson \
-            ninja-build \
-            pkg-config \
-            qt6-base-dev \
-            qt6-tools-dev \
-            qt6-tools-dev-tools \
-            qt6-webengine-dev \
-            libkf6coreaddons-dev \
-            libkf6i18n-dev \
-            libkf6xmlgui-dev \
-            dpkg-dev \
-            fakeroot \
-            rpm
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git ca-certificates build-essential meson ninja-build pkg-config \
+            qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-webengine-dev \
+            libkf6coreaddons-dev libkf6i18n-dev libkf6xmlgui-dev \
+            dpkg-dev file
 
-      - name: Get version
-        id: version
-        run: |
-          VERSION=$(sed -n "s/.*version: '\\([^']*\\)'.*/\1/p" meson.build)
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Version: $VERSION"
+      - uses: actions/checkout@v4
 
-      - name: Configure
+      - name: Build and stage
         run: |
-          meson setup build \
-            --buildtype=release \
-            --prefix=/usr
-
-      - name: Build
-        run: |
+          meson setup build --prefix=/usr --buildtype=release
           meson compile -C build
-
-      - name: Install to staging directory
-        run: |
           DESTDIR="$PWD/stage" meson install -C build
 
-      - name: Create TAR.GZ
+      - name: Package tar.gz and deb
         run: |
-          tar \
-            -C stage \
-            -czf "Perch-${{ steps.version.outputs.version }}-linux-x86_64.tar.gz" \
-            .
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
 
-      - name: Create DEB
-        run: |
-          mkdir -p deb/DEBIAN
+          tar -C stage -czf "dist/Perch-${VERSION}-linux-x86_64.tar.gz" .
 
-          cp -a stage/. deb/
+          # Dependências calculadas a partir das libs realmente linkadas
+          mkdir -p debian && touch debian/control
+          DEPENDS="$(dpkg-shlibdeps -O -e stage/usr/bin/perch 2>/dev/null | sed 's/^shlibs:Depends=//')"
+          rm -rf debian
 
-          cat > deb/DEBIAN/control <<EOF
+          mkdir -p stage/DEBIAN
+          cat > stage/DEBIAN/control <<EOF
           Package: perch
-          Version: ${{ steps.version.outputs.version }}
+          Version: ${VERSION}
           Section: utils
           Priority: optional
           Architecture: amd64
-          Maintainer: FlaipyTheHost
-          Description: Lightweight popup launcher for web services
-           A lightweight popup launcher for your favorite web services,
-           built with Qt 6 and KDE Frameworks 6.
+          Maintainer: FlaipyTheHost <noreply@github.com>
+          Depends: ${DEPENDS}
+          Description: Popup launcher for web and AI services
+           Lightweight popup launcher built with Qt 6 and KDE Frameworks 6.
           EOF
+          # remove indentação do heredoc
+          sed -i 's/^          //' stage/DEBIAN/control
 
-          dpkg-deb \
-            --build \
-            deb \
-            "Perch-${{ steps.version.outputs.version }}-amd64.deb"
+          dpkg-deb --root-owner-group --build stage "dist/Perch-${VERSION}-amd64.deb"
 
-      - name: Create RPM
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-deb
+          path: dist/*
+
+  build-rpm:
+    runs-on: ubuntu-24.04
+    container: fedora:latest
+    steps:
+      - name: Install dependencies
         run: |
-          mkdir -p \
-            rpm/{BUILD,BUILDROOT,RPMS,SOURCES,SRPMS,SPECS}
+          dnf install -y git gcc-c++ meson ninja-build pkgconf-pkg-config rpm-build \
+            qt6-qtbase-devel qt6-qttools-devel qt6-linguist qt6-qtwebengine-devel \
+            kf6-kcoreaddons-devel kf6-ki18n-devel kf6-kxmlgui-devel
 
-          cat > rpm/SPECS/perch.spec <<EOF
-          Name:           perch
-          Version:        ${{ steps.version.outputs.version }}
-          Release:        1%{?dist}
-          Summary:        Lightweight popup launcher for web services
-          License:        GPL-3.0-or-later
-          URL:            https://github.com/${{ github.repository }}
+      - uses: actions/checkout@v4
+
+      - name: Build and stage
+        run: |
+          meson setup build --prefix=/usr --buildtype=release
+          meson compile -C build
+          DESTDIR="$PWD/stage" meson install -C build
+
+      - name: Build rpm
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cat > perch.spec <<EOF
+          %global debug_package %{nil}
+          Name:    perch
+          Version: ${VERSION}
+          Release: 1
+          Summary: Popup launcher for web and AI services
+          License: GPL-3.0-only
+          URL:     https://github.com/FlaipyTheHost/perch
 
           %description
-          A lightweight popup launcher for your favorite web services,
-          built with Qt 6 and KDE Frameworks 6.
+          Lightweight popup launcher built with Qt 6 and KDE Frameworks 6.
 
           %install
-          rm -rf %{buildroot}
           mkdir -p %{buildroot}
-          cp -a "$PWD/stage/." %{buildroot}/
+          cp -a ${PWD}/stage/. %{buildroot}/
 
           %files
           /usr/bin/perch
           /usr/share/applications/io.FlaipyTheHost.Perch.desktop
           /usr/share/icons/hicolor/scalable/apps/io.FlaipyTheHost.Perch.svg
-          EOF
-
-          rpmbuild \
-            --define "_topdir $PWD/rpm" \
-            --define "_rpmdir $PWD/rpm/RPMS" \
-            --target x86_64 \
-            -bb rpm/SPECS/perch.spec
-
-          cp rpm/RPMS/x86_64/*.rpm \
-            "Perch-${{ steps.version.outputs.version }}-x86_64.rpm"
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          generate_release_notes: true
-          files: |
-            Perch-${{ steps.version.outputs.version }}-linux-x86_64.tar.gz
-            Perch-${{ steps.version.outputs.version }}-amd64.deb
-            Perch-${{ steps.version.outputs.version }}-x86_64.rpm
