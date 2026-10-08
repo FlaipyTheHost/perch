@@ -9,8 +9,8 @@
 A lightweight popup launcher for your favorite web services, built with Qt 6 and KDE Frameworks 6.
 
 <p align="center">
-  <img src="docs/screenshot.png" height="300">
-  <img src="docs/demo.gif" height="300">
+  <img src="docs/screenshot.png" height="600">
+  <img src="docs/demo.gif" height="600">
 </p>
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
