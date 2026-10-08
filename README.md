@@ -5,9 +5,12 @@
 # Perch
 
 **Keep any AI chat one click away in your system tray.**
+
+A lightweight popup launcher for your favorite web services, built with Qt 6 and KDE Frameworks 6.
+
 <p align="center">
-  <img src="docs/screenshot.png" height="700">
-  <img src="docs/demo.gif">
+  <img src="docs/screenshot.png" height="300">
+  <img src="docs/demo.gif" height="300">
 </p>
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
