@@ -105,3 +105,28 @@ jobs:
           /usr/bin/perch
           /usr/share/applications/io.FlaipyTheHost.Perch.desktop
           /usr/share/icons/hicolor/scalable/apps/io.FlaipyTheHost.Perch.svg
+          EOF
+          sed -i 's/^          //' perch.spec
+
+          rpmbuild -bb perch.spec --define "_topdir $PWD/rpmbuild"
+          mkdir -p dist
+          cp rpmbuild/RPMS/*/perch-*.rpm "dist/Perch-${VERSION}-x86_64.rpm"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-rpm
+          path: dist/*
+
+  release:
+    needs: [build-deb, build-rpm]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
