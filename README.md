@@ -5,11 +5,10 @@
 # Perch
 
 **Keep any AI chat one click away in your system tray.**
-
-A lightweight popup launcher for your favorite web services, built with Qt 6 and KDE Frameworks 6.
-
-<img src="docs/screenshot.png" alt="Perch popup window running next to the system tray" width="640">
-🎬 **[Watch the screen recording](docs/screenrecord.webm)**
+<p align="center">
+  <img src="docs/screenshot.png" height="700">
+  <img src="docs/demo.gif" height="700">
+</p>
 
 ![Version](https://img.shields.io/badge/version-0.4.0-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
