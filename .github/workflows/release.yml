@@ -18,6 +18,7 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             git ca-certificates build-essential meson ninja-build pkg-config \
+            cmake extra-cmake-modules \
             qt6-base-dev qt6-tools-dev qt6-tools-dev-tools qt6-webengine-dev \
             libkf6coreaddons-dev libkf6i18n-dev libkf6xmlgui-dev \
             dpkg-dev file
@@ -32,32 +33,41 @@ jobs:
 
       - name: Package tar.gz and deb
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          RAW="${GITHUB_REF_NAME#v}"            # ex: 0.4.0 ou 0.4.0-test
+          BASE="${RAW%%-*}"                     # 0.4.0
+          if [ "$RAW" = "$BASE" ]; then
+            DEBVER="$BASE"
+          else
+            DEBVER="${BASE}~${RAW#*-}"          # 0.4.0~test
+          fi
           mkdir -p dist
 
-          tar -C stage -czf "dist/Perch-${VERSION}-linux-x86_64.tar.gz" .
+          tar -C stage -czf "dist/Perch-${RAW}-linux-x86_64.tar.gz" .
 
           # Dependências calculadas a partir das libs realmente linkadas
           mkdir -p debian && touch debian/control
-          DEPENDS="$(dpkg-shlibdeps -O -e stage/usr/bin/perch 2>/dev/null | sed 's/^shlibs:Depends=//')"
+          DEPENDS="$(dpkg-shlibdeps -O -e stage/usr/bin/perch | sed 's/^shlibs:Depends=//')"
           rm -rf debian
+          if [ -z "$DEPENDS" ]; then
+            echo "dpkg-shlibdeps nao retornou dependencias" >&2
+            exit 1
+          fi
+          echo "Depends: $DEPENDS"
 
           mkdir -p stage/DEBIAN
-          cat > stage/DEBIAN/control <<EOF
-          Package: perch
-          Version: ${VERSION}
-          Section: utils
-          Priority: optional
-          Architecture: amd64
-          Maintainer: FlaipyTheHost <noreply@github.com>
-          Depends: ${DEPENDS}
-          Description: Popup launcher for web and AI services
-           Lightweight popup launcher built with Qt 6 and KDE Frameworks 6.
-          EOF
-          # remove indentação do heredoc
-          sed -i 's/^          //' stage/DEBIAN/control
+          printf '%s\n' \
+            "Package: perch" \
+            "Version: ${DEBVER}" \
+            "Section: utils" \
+            "Priority: optional" \
+            "Architecture: amd64" \
+            "Maintainer: FlaipyTheHost <noreply@github.com>" \
+            "Depends: ${DEPENDS}" \
+            "Description: Popup launcher for web and AI services" \
+            " Lightweight popup launcher built with Qt 6 and KDE Frameworks 6." \
+            > stage/DEBIAN/control
 
-          dpkg-deb --root-owner-group --build stage "dist/Perch-${VERSION}-amd64.deb"
+          dpkg-deb --root-owner-group --build stage "dist/Perch-${RAW}-amd64.deb"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -70,7 +80,8 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
-          dnf install -y git gcc-c++ meson ninja-build pkgconf-pkg-config rpm-build \
+          dnf install -y git gcc-c++ meson ninja-build cmake extra-cmake-modules \
+            pkgconf-pkg-config rpm-build \
             qt6-qtbase-devel qt6-qttools-devel qt6-linguist qt6-qtwebengine-devel \
             kf6-kcoreaddons-devel kf6-ki18n-devel kf6-kxmlgui-devel
 
@@ -84,12 +95,19 @@ jobs:
 
       - name: Build rpm
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          RAW="${GITHUB_REF_NAME#v}"            # ex: 0.4.0 ou 0.4.0-test
+          VERSION="${RAW%%-*}"                  # 0.4.0 (RPM nao aceita '-')
+          if [ "$RAW" = "$VERSION" ]; then
+            RELEASE="1"
+          else
+            RELEASE="0.${RAW#*-}"               # 0.test
+          fi
+
           cat > perch.spec <<EOF
           %global debug_package %{nil}
           Name:    perch
           Version: ${VERSION}
-          Release: 1
+          Release: ${RELEASE}
           Summary: Popup launcher for web and AI services
           License: GPL-3.0-only
           URL:     https://github.com/FlaipyTheHost/perch
@@ -106,11 +124,10 @@ jobs:
           /usr/share/applications/io.FlaipyTheHost.Perch.desktop
           /usr/share/icons/hicolor/scalable/apps/io.FlaipyTheHost.Perch.svg
           EOF
-          sed -i 's/^          //' perch.spec
 
           rpmbuild -bb perch.spec --define "_topdir $PWD/rpmbuild"
           mkdir -p dist
-          cp rpmbuild/RPMS/*/perch-*.rpm "dist/Perch-${VERSION}-x86_64.rpm"
+          cp rpmbuild/RPMS/*/perch-*.rpm "dist/Perch-${RAW}-x86_64.rpm"
 
       - uses: actions/upload-artifact@v4
         with:
@@ -130,3 +147,4 @@ jobs:
         with:
           files: dist/*
           generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
