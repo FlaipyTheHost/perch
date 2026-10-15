@@ -11,7 +11,7 @@ namespace Perch {
         KAboutData aboutData(
             QStringLiteral("perch"),
                              QCoreApplication::translate("About", "Perch"),
-                             QStringLiteral("0.4.2-alpha"),
+                             QStringLiteral("0.4.2"),
                              QCoreApplication::translate("About", "A lightweight popup launcher for your favorite web services."),
                              KAboutLicense::GPL_V3,
                              QCoreApplication::translate("About", "© 2026 Carlos Araújo"),

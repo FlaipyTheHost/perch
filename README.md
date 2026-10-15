@@ -13,7 +13,7 @@ A lightweight popup launcher for your favorite web services, built with Qt 6 and
   <img src="docs/demo.gif" height="600">
 </p>
 
-![Version](https://img.shields.io/badge/version-0.4.2--alpha-orange)
+![Version](https://img.shields.io/badge/version-0.4.2-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)
 ![Qt](https://img.shields.io/badge/Qt-6-41CD52?logo=qt&logoColor=white)

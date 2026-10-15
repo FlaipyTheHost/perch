@@ -1,5 +1,5 @@
 project('perch', 'cpp',
-  version: '0.4.2-alpha',
+  version: '0.4.2',
   meson_version: '>= 1.3.0',
   default_options: ['cpp_std=c++20', 'warning_level=2', 'buildtype=release'])
 
