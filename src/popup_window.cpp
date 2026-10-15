@@ -12,7 +12,9 @@
 #include <QVBoxLayout>
 #include <QWebEngineNewWindowRequest>
 #include <QWebEnginePage>
+#include <QWebEnginePermission>
 #include <QWebEngineProfile>
+#include <QWebEngineSettings>
 #include <QWebEngineView>
 
 PopupWindow::PopupWindow(const Config& config, QWidget* parent)
@@ -44,6 +46,15 @@ void PopupWindow::buildUi() {
     // Links that request a new window open in the system's default browser.
     connect(page_, &QWebEnginePage::newWindowRequested, this,
             [](QWebEngineNewWindowRequest& request) { QDesktopServices::openUrl(request.requestedUrl()); });
+
+    // Let the site's "copy" buttons (navigator.clipboard.writeText) reach the system clipboard.
+    // QtWebEngine blocks JavaScript clipboard access by default; Ctrl+C works regardless
+    // because it goes through Qt's native copy action.
+    page_->settings()->setAttribute(QWebEngineSettings::JavascriptCanAccessClipboard, true);
+    connect(page_, &QWebEnginePage::permissionRequested, this, [](QWebEnginePermission permission) {
+        if (permission.permissionType() == QWebEnginePermission::PermissionType::ClipboardReadWrite)
+            permission.grant();
+    });
 
     view_ = new QWebEngineView(this);
     view_->setPage(page_);
