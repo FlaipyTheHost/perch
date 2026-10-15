@@ -13,7 +13,7 @@ A lightweight popup launcher for your favorite web services, built with Qt 6 and
   <img src="docs/demo.gif" height="600">
 </p>
 
-![Version](https://img.shields.io/badge/version-0.4.0-blue)
+![Version](https://img.shields.io/badge/version-0.4.2--alpha-orange)
 ![License](https://img.shields.io/badge/license-GPL--3.0-green)
 ![C++](https://img.shields.io/badge/C%2B%2B-20-00599C?logo=cplusplus&logoColor=white)
 ![Qt](https://img.shields.io/badge/Qt-6-41CD52?logo=qt&logoColor=white)
@@ -60,6 +60,8 @@ It is not tied to any particular service: Perch simply hosts a web page inside a
 - **Persistent sessions:** cookies are stored, so you stay signed in between restarts.
 - **Single instance:** running `perch` again toggles the existing window, which is ideal for global keyboard shortcuts.
 - **External links:** links that ask for a new window open in your default browser.
+- **Downloads:** files, images and documents the page downloads are saved to your `~/Downloads` folder (never overwriting an existing file); a notification tells you when it's done, and clicking it shows the file in your file manager.
+- **Theme-friendly tray icon:** a monochrome bird head that follows Plasma's panel colors, with white/black/colorful variants or your own icon, selectable in Settings.
 - **Sign-in friendly:** configurable User-Agent (and Chromium Client Hints disabled) to avoid sign-in pages that reject embedded browsers.
 - **Customizable size:** set the window width and height from the Settings dialog.
 - **Localized:** English (source), Spanish and Portuguese, embedded in the executable.
@@ -115,6 +117,7 @@ The install step places the following files:
 | `perch` | `<prefix>/bin` |
 | `io.FlaipyTheHost.Perch.desktop` | `<prefix>/share/applications` |
 | `io.FlaipyTheHost.Perch.svg` | `<prefix>/share/icons/hicolor/scalable/apps` |
+| `io.FlaipyTheHost.Perch-symbolic.svg` | `<prefix>/share/icons/hicolor/scalable/apps` |
 
 > If `lrelease` is not found, Meson prints a warning and builds without translations.
 
@@ -129,7 +132,7 @@ flatpak run io.FlaipyTheHost.Perch
 
 You may need the KDE SDK, runtime and the `io.qt.qtwebengine.BaseApp` installed from Flathub first.
 
-**Sandbox permissions:** GPU access (`dri`), Wayland and X11 (fallback) sockets, IPC, network, and the `org.freedesktop.Notifications` D-Bus name.
+**Sandbox permissions:** GPU access (`dri`), Wayland and X11 (fallback) sockets, IPC, network, the Downloads folder (`xdg-download`), and the `org.freedesktop.Notifications` and `org.freedesktop.FileManager1` D-Bus names.
 
 ## Configuration
 
@@ -148,6 +151,8 @@ When running as a Flatpak, this file lives inside the app's sandboxed config dir
 | `window/height` | `640` | Window height in pixels (240–3000). | ✅ |
 | `window/margin` | `8` | Distance from the screen edge in pixels (0–200). | ❌ |
 | `network/user_agent` | Firefox 140 on Linux | User-Agent sent to websites. | ❌ |
+| `tray/icon` | `auto` | Tray icon: `auto` (monochrome, follows the panel), `light` (white), `dark` (black), `color` (app icon) or `custom`. | ✅ |
+| `tray/custom_icon` | *(empty)* | Image file or icon theme name used when `tray/icon=custom`. | ✅ |
 
 Example:
 
@@ -160,6 +165,10 @@ margin=8
 
 [network]
 user_agent=Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0
+
+[tray]
+icon=auto
+custom_icon=
 ```
 
 ### About the User-Agent
@@ -197,6 +206,8 @@ perch/
 ├── data/
 │   ├── io.FlaipyTheHost.Perch.desktop
 │   ├── io.FlaipyTheHost.Perch.svg    # App icon
+│   ├── io.FlaipyTheHost.Perch-symbolic.svg  # Monochrome tray icon (recolored by Plasma)
+│   ├── tray-light.svg / tray-dark.svg       # Fixed white/black tray icons
 │   └── resources.qrc                 # Embedded resources
 ├── translations/
 │   ├── meson.build
@@ -216,6 +227,8 @@ perch/
 - **Single instance:** implemented with `QLocalServer` / `QLocalSocket`, named after the app ID. A second launch sends a `toggle` message and exits.
 - **Wayland:** native Wayland does not let applications position their own windows. Perch sets `QT_QPA_PLATFORM=xcb;wayland` (unless you already set it), so it runs through XWayland where possible and falls back to Wayland otherwise.
 - **Web engine:** uses a dedicated persistent `QWebEngineProfile` named `perch` with forced persistent cookies. Chromium's `UserAgentClientHint` feature is disabled so the Client Hints agree with the configured User-Agent. Existing `QTWEBENGINE_CHROMIUM_FLAGS` are preserved.
+- **Downloads:** the profile's `downloadRequested` signal accepts every download into `QStandardPaths::DownloadLocation` (the home folder if there is none), picking a free name like `file (1).pdf` instead of overwriting.
+- **Tray icon:** in automatic mode the installed `io.FlaipyTheHost.Perch-symbolic` icon is handed to Plasma by name; it uses the `ColorScheme-Text` stylesheet class, so Plasma paints it in the panel's text color. When it isn't installed, Perch picks the white or black variant from the current color scheme.
 - **Focus handling:** the popup hides on focus loss, but not when focus moves to another window of the app (such as a file chooser used for attachments) or to a menu. A short guard prevents the tray click that caused the auto-hide from immediately reopening the window.
 
 ## Contributing

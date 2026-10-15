@@ -1,10 +1,12 @@
 #pragma once
 
 #include <QElapsedTimer>
+#include <QSet>
 #include <QWidget>
 
 #include "config.h"
 
+class QWebEngineDownloadRequest;
 class QWebEnginePage;
 class QWebEngineProfile;
 class QWebEngineView;
@@ -23,6 +25,12 @@ public:
     void hidePopup();
     void applyConfig(const Config& config);
 
+signals:
+    // A file the page downloaded was saved (absolute path).
+    void downloadFinished(const QString& filePath);
+    // A download could not be completed (file name and the reason given by the browser engine).
+    void downloadFailed(const QString& fileName, const QString& reason);
+
 protected:
     void closeEvent(QCloseEvent* event) override;
     void changeEvent(QEvent* event) override;
@@ -32,6 +40,8 @@ private:
     void loadPage();
     void moveToRightSide();
     void hideIfFocusLost();
+    void handleDownload(QWebEngineDownloadRequest* download);
+    [[nodiscard]] QString uniqueFileName(const QString& dir, QString name) const;
     [[nodiscard]] QString welcomeHtml() const;
 
     QWebEngineProfile* profile_ = nullptr;
@@ -41,4 +51,5 @@ private:
     Config config_;
     bool initialized_ = false;
     QElapsedTimer lastAutoHide_;
+    QSet<QString> pendingDownloads_;  // paths reserved by downloads still in progress
 };

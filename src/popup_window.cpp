@@ -4,12 +4,16 @@
 #include <QCloseEvent>
 #include <QCursor>
 #include <QDesktopServices>
+#include <QDir>
 #include <QEvent>
+#include <QFileInfo>
 #include <QGuiApplication>
 #include <QScreen>
 #include <QShortcut>
+#include <QStandardPaths>
 #include <QTimer>
 #include <QVBoxLayout>
+#include <QWebEngineDownloadRequest>
 #include <QWebEngineNewWindowRequest>
 #include <QWebEnginePage>
 #include <QWebEnginePermission>
@@ -42,6 +46,10 @@ void PopupWindow::buildUi() {
     // The User-Agent is configurable; Client Hints are disabled in main.cpp so both agree.
     profile_->setHttpUserAgent(config_.userAgent);
 
+    // Downloads (files, images, generated documents...) go straight to the user's Downloads folder.
+    // QtWebEngine cancels every download that isn't explicitly accepted.
+    connect(profile_, &QWebEngineProfile::downloadRequested, this, &PopupWindow::handleDownload);
+
     page_ = new QWebEnginePage(profile_, this);
     // Links that request a new window open in the system's default browser.
     connect(page_, &QWebEnginePage::newWindowRequested, this,
@@ -62,6 +70,63 @@ void PopupWindow::buildUi() {
     auto* layout = new QVBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->addWidget(view_);
+}
+
+QString PopupWindow::uniqueFileName(const QString& dir, QString name) const {
+    name = QFileInfo(name).fileName();  // never let a suggested name escape the folder
+    if (name.isEmpty() || name == QLatin1String(".") || name == QLatin1String(".."))
+        name = QStringLiteral("download");
+
+    const QDir folder(dir);
+    auto taken = [&](const QString& candidate) {
+        const QString path = folder.filePath(candidate);
+        return QFileInfo::exists(path) || pendingDownloads_.contains(path);
+    };
+    if (!taken(name)) return name;
+
+    // "report.pdf" -> "report (1).pdf"; keeps compound extensions such as ".tar.gz".
+    const QFileInfo info(name);
+    QString base = info.completeBaseName();
+    QString suffix = info.suffix().isEmpty() ? QString() : QLatin1Char('.') + info.suffix();
+    if (base.endsWith(QLatin1String(".tar"))) {
+        base.chop(4);
+        suffix.prepend(QLatin1String(".tar"));
+    }
+    if (base.isEmpty()) {  // dotfiles like ".bashrc"
+        base = name;
+        suffix.clear();
+    }
+    for (int i = 1;; ++i) {
+        const QString candidate = QStringLiteral("%1 (%2)%3").arg(base).arg(i).arg(suffix);
+        if (!taken(candidate)) return candidate;
+    }
+}
+
+void PopupWindow::handleDownload(QWebEngineDownloadRequest* download) {
+    QString dir = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (dir.isEmpty()) dir = QDir::homePath();
+    QDir().mkpath(dir);
+
+    download->setDownloadDirectory(dir);
+    download->setDownloadFileName(uniqueFileName(dir, download->downloadFileName()));
+    const QString path = QDir(dir).filePath(download->downloadFileName());
+    pendingDownloads_.insert(path);
+
+    connect(download, &QWebEngineDownloadRequest::isFinishedChanged, this, [this, download, path] {
+        if (!download->isFinished()) return;
+        pendingDownloads_.remove(path);
+        switch (download->state()) {
+            case QWebEngineDownloadRequest::DownloadCompleted:
+                emit downloadFinished(path);
+                break;
+            case QWebEngineDownloadRequest::DownloadInterrupted:
+                emit downloadFailed(download->downloadFileName(), download->interruptReasonString());
+                break;
+            default:
+                break;
+        }
+    });
+    download->accept();
 }
 
 QString PopupWindow::welcomeHtml() const {

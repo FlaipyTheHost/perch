@@ -19,6 +19,18 @@ struct Config {
     // browsers that identify as QtWebEngine; bump the Firefox version here if that starts happening.
     QString userAgent = QStringLiteral("Mozilla/5.0 (X11; Linux x86_64; rv:140.0) Gecko/20100101 Firefox/140.0");
 
+    // Tray icon: "auto" (monochrome, follows the panel colors), "light" (white, for dark panels),
+    // "dark" (black, for light panels), "color" (the full app icon) or "custom" (trayIconCustom).
+    QString trayIcon = QStringLiteral("auto");
+    // Image file (svg, png, ...) or icon theme name, used when trayIcon is "custom".
+    QString trayIconCustom;
+
+    [[nodiscard]] static bool isTrayIconStyle(const QString& style) {
+        return style == QLatin1String("auto") || style == QLatin1String("light") ||
+               style == QLatin1String("dark") || style == QLatin1String("color") ||
+               style == QLatin1String("custom");
+    }
+
     [[nodiscard]] static QString normalizeUrl(QString text) {
         text = text.trimmed();
         if (text.isEmpty()) return {};
@@ -34,6 +46,9 @@ struct Config {
         c.height = std::clamp(s.value(QStringLiteral("window/height"), c.height).toInt(), kMinSize, kMaxSize);
         c.margin = std::clamp(s.value(QStringLiteral("window/margin"), c.margin).toInt(), 0, 200);
         c.userAgent = s.value(QStringLiteral("network/user_agent"), c.userAgent).toString();
+        const QString style = s.value(QStringLiteral("tray/icon"), c.trayIcon).toString().trimmed().toLower();
+        if (isTrayIconStyle(style)) c.trayIcon = style;
+        c.trayIconCustom = s.value(QStringLiteral("tray/custom_icon")).toString().trimmed();
         return c;
     }
 
@@ -44,6 +59,8 @@ struct Config {
         s.setValue(QStringLiteral("window/height"), height);
         s.setValue(QStringLiteral("window/margin"), margin);
         s.setValue(QStringLiteral("network/user_agent"), userAgent);
+        s.setValue(QStringLiteral("tray/icon"), trayIcon);
+        s.setValue(QStringLiteral("tray/custom_icon"), trayIconCustom);
     }
 
 private:

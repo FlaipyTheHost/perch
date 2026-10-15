@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="32 11 30 30">
+  <!-- Perch tray icon: the bird's head. Plasma recolors ColorScheme-Text to match the panel. -->
+  <defs>
+    <style id="current-color-scheme" type="text/css">.ColorScheme-Text { color:#232629; }</style>
+  </defs>
+  <path class="ColorScheme-Text" style="fill:currentColor" d="M53 26A10 10 0 1 1 33 26A10 10 0 1 1 53 26ZM50 23.2L61 28L50 31.8ZM48.6 24A2.6 2.6 0 1 0 43.4 24A2.6 2.6 0 1 0 48.6 24Z"/>
+</svg>

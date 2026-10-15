@@ -123,6 +123,7 @@ jobs:
           /usr/bin/perch
           /usr/share/applications/io.FlaipyTheHost.Perch.desktop
           /usr/share/icons/hicolor/scalable/apps/io.FlaipyTheHost.Perch.svg
+          /usr/share/icons/hicolor/scalable/apps/io.FlaipyTheHost.Perch-symbolic.svg
           EOF
 
           rpmbuild -bb perch.spec --define "_topdir $PWD/rpmbuild"

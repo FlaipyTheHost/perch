@@ -17,6 +17,8 @@ finish-args:
   - --share=ipc
   - --share=network
   - --talk-name=org.freedesktop.Notifications
+  - --talk-name=org.freedesktop.FileManager1
+  - --filesystem=xdg-download
   - --env=QTWEBENGINEPROCESS_PATH=/app/bin/QtWebEngineProcess
 
 cleanup-commands:

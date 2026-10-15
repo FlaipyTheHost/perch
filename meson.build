@@ -1,12 +1,12 @@
 project('perch', 'cpp',
-  version: '0.4.0',
+  version: '0.4.2-alpha',
   meson_version: '>= 1.3.0',
   default_options: ['cpp_std=c++20', 'warning_level=2', 'buildtype=release'])
 
 qt6 = import('qt6')
 
 qt_dep = dependency('qt6',
-  modules: ['Core', 'Gui', 'Widgets', 'Network', 'WebEngineWidgets'])
+  modules: ['Core', 'Gui', 'Widgets', 'Network', 'DBus', 'WebEngineWidgets'])
 
 # Dependências do KDE Frameworks 6 para o diálogo "Sobre"
 kf6_coreaddons_dep = dependency('KF6CoreAddons', required: true)
@@ -48,4 +48,7 @@ app_id = 'io.FlaipyTheHost.Perch'
 install_data('data' / app_id + '.desktop',
   install_dir: get_option('datadir') / 'applications')
 install_data('data' / app_id + '.svg',
+  install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps')
+# Monochrome tray icon; Plasma recolors it to match the panel (light or dark).
+install_data('data' / app_id + '-symbolic.svg',
   install_dir: get_option('datadir') / 'icons/hicolor/scalable/apps')

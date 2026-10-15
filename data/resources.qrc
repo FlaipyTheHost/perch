@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="/">
     <file>io.FlaipyTheHost.Perch.svg</file>
+    <file>io.FlaipyTheHost.Perch-symbolic.svg</file>
+    <file>tray-light.svg</file>
+    <file>tray-dark.svg</file>
   </qresource>
 </RCC>
